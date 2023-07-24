@@ -1,15 +1,55 @@
 version: 2.1
 
 jobs:
-  hello-job:
+  build-frontend:
     docker:
-      - image: cimg/node:17.2.0
-
+      - image: circleci/node:13.8.0
     steps:
       - checkout
-      - run: echo "Hello world"
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Build front-end
+          command: |
+            cd frontend && npm install && npm run build
+      - save_cache:
+          paths: [frontend/node_modules]
+          key: frontend-build
+
+  build-backend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Back-end build
+          command: |
+            cd backend && npm install && npm run build
+      - save_cache:
+          paths: [backend/node_modules]
+          key: backend-build
+
+  test-frontend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build-tests]
+      - run:
+          name: Frontend tests
+          command: | 
+            cd frontend && npm install && npm run test
+      - save_cache:
+          paths: [frontend/node_modules]
+          key: frontend-build-tests
 
 workflows:
   my-workflow:
     jobs:
-      - hello-job
+      - build-frontend
+      - build-backend
+      - test-frontend:
+          requires: [build-frontend]
